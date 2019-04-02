@@ -122,7 +122,7 @@ while True:
     plt.savefig("/var/www/html/tempi.png")
     os.system(script_dir+"/upload.sh")
     carboy_temp = temps[name_to_id("Carboy probe")]-bias_accum[name_to_id("Carboy probe")]/bias_count 
-    if ((carboy_temp > target_temp) and (carboy_temp > 0.0)):
+    if ((carboy_temp > target_temp) and (carboy_temp > (target_temp-0.0)/2.0)):
       print("Switching fridge on")
       os.system(script_dir+"/wemo.sh on")
     elif (carboy_temp < target_temp):
