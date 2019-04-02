@@ -17,11 +17,7 @@ os.system('modprobe w1-therm')
  
 base_dir = '/sys/bus/w1/devices/'
 
-min_temp = float(sys.argv[1])
-max_temp = float(sys.argv[2])
-if (min_temp > max_temp):
-  print("Ugh")
-  exit(-1)
+target_temp = 11.1
  
 def read_temp_raw(device):
     device_file = device + '/w1_slave'
@@ -54,10 +50,10 @@ bias_accum = {
 bias_count = 1 
 
 id2Name = {
-  "6d": "Basement",
-  "9c": "Carboy 2",
+  "6d": "Carboy bottom",
+  "9c": "Basement",
   "d4": "Fridge",
-  "b1": "Carboy 1"
+  "b1": "Carboy probe"
 }
 
 def name_to_id(name):
@@ -100,11 +96,21 @@ while True:
         for device in devices:
           bias_accum[device] += temps[device]-avg
         bias_count += 1
+    plt.plot(times, [c2f(target_temp)] * len(times), "r", label="target ("+"{:.1f}".format(c2f(target_temp))+"F)")
     for device in devices:
+      color = "b"
+      if (id2Name[device[-2:]] == "Carboy bottom"):
+        color = "k--"
+      elif (id2Name[device[-2:]] == "Basement"):
+        color = "k-."
+      elif (id2Name[device[-2:]] == "Fridge"):
+        color = "b-"
+      elif (id2Name[device[-2:]] == "Carboy probe"):
+        color = "y-"
       norm_temp = temps[device]-bias_accum[device]/bias_count
       print(device+": "+str(norm_temp))
       display_temps[device].append(c2f(norm_temp))
-      plt.plot(times,display_temps[device], label=id2Name[device[-2:]]+" ("+"{:.1f}".format(c2f(norm_temp))+"F)")
+      plt.plot(times,display_temps[device], color, label=id2Name[device[-2:]]+" ("+"{:.1f}".format(c2f(norm_temp))+"F)")
       if estimate_biases:
           sys.stdout.write(device[-2:]+"="+"{:.2f}".format(bias_accum[device]/bias_count)+" ")
 
@@ -115,14 +121,14 @@ while True:
     plt.grid()
     plt.savefig("/var/www/html/tempi.png")
     os.system(script_dir+"/upload.sh")
-    avg_temp = (temps[name_to_id("Carboy 1")]+temps[name_to_id("Carboy 2")])/2 
-    if (avg_temp > max_temp):
+    carboy_temp = temps[name_to_id("Carboy probe")]-bias_accum[name_to_id("Carboy probe")]/bias_count 
+    if ((carboy_temp > target_temp) and (carboy_temp > 0.0)):
       print("Switching fridge on")
       os.system(script_dir+"/wemo.sh on")
-    elif (avg_temp < min_temp):
+    elif (carboy_temp < target_temp):
       print("Switching fridge off")
       os.system(script_dir+"/wemo.sh off")
-    time.sleep(10*60)
+    time.sleep(5*60)
     times = times[-400:]
     for device in devices:
       display_temps[device] = display_temps[device][-400:]
