@@ -17,7 +17,7 @@ os.system('modprobe w1-therm')
  
 base_dir = '/sys/bus/w1/devices/'
 
-target_temp = 11.1
+target_temp = 7.2
  
 def read_temp_raw(device):
     device_file = device + '/w1_slave'
@@ -126,10 +126,10 @@ while True:
     if ((carboy_temp > target_temp) and (fridge_temp > (target_temp-0.0)/2.0)):
       print("Switching fridge on")
       os.system(script_dir+"/wemo.sh on")
-    elif (carboy_temp < target_temp):
+    else:
       print("Switching fridge off")
       os.system(script_dir+"/wemo.sh off")
-    time.sleep(5*60)
+    time.sleep(1*60)
     times = times[-400:]
     for device in devices:
       display_temps[device] = display_temps[device][-400:]
