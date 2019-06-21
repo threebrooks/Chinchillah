@@ -9,6 +9,15 @@ matplotlib.use('Agg')
 #matplotlib.use('GTKAgg');
 import matplotlib.pyplot as plt
 import numpy as np
+import ConfigParser
+
+config = ConfigParser.ConfigParser()
+config.sections()
+config.read(sys.argv[1])
+operation_type = config.get('DEFAULT', 'type')
+target_temp = config.getfloat('DEFAULT', 'target_temperature')
+max_driver_to_target_dist = config.getfloat('DEFAULT', 'max_driver_to_target_dist')
+seconds_between_actions = config.getfloat('DEFAULT', 'seconds_between_actions')
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
  
@@ -17,8 +26,6 @@ os.system('modprobe w1-therm')
  
 base_dir = '/sys/bus/w1/devices/'
 
-target_temp = 7.2
- 
 def read_temp_raw(device):
     device_file = device + '/w1_slave'
     f = open(device_file, 'r')
@@ -49,10 +56,15 @@ bias_accum = {
 }
 bias_count = 1 
 
+if (operation_type == "heat"):
+  driver_name = "Heating jacket"
+else:
+  driver_name = "Fridge"
+
 id2Name = {
   "6d": "Carboy bottom",
+  "d4": driver_name,
   "9c": "Basement",
-  "d4": "Fridge",
   "b1": "Carboy probe"
 }
 
@@ -103,7 +115,7 @@ while True:
         color = "k--"
       elif (id2Name[device[-2:]] == "Basement"):
         color = "k-."
-      elif (id2Name[device[-2:]] == "Fridge"):
+      elif (id2Name[device[-2:]] == driver_name):
         color = "b-"
       elif (id2Name[device[-2:]] == "Carboy probe"):
         color = "y-"
@@ -122,14 +134,21 @@ while True:
     plt.savefig("/var/www/html/tempi.png")
     os.system(script_dir+"/upload.sh")
     carboy_temp = temps[name_to_id("Carboy probe")]-bias_accum[name_to_id("Carboy probe")]/bias_count 
-    fridge_temp = temps[name_to_id("Fridge")]-bias_accum[name_to_id("Fridge")]/bias_count 
-    if ((carboy_temp > target_temp) and (fridge_temp > (target_temp-0.0)/2.0)):
-      print("Switching fridge on")
-      os.system(script_dir+"/wemo.sh on")
+    driver_temp = temps[name_to_id(driver_name)]-bias_accum[name_to_id(driver_name)]/bias_count 
+    action = "off"
+    if ((carboy_temp > target_temp) and (driver_temp > (target_temp-max_driver_to_target_dist))):
+      if (operation_type == "cool"):
+        action = "on"
+      else:
+        action = "off"
     else:
-      print("Switching fridge off")
-      os.system(script_dir+"/wemo.sh off")
-    time.sleep(1*60)
+      if (operation_type == "cool"):
+        action = "off"
+      else:
+        action = "on"
+    print("Temp diff to target:"+str(target_temp-carboy_temp)+" => Switching "+driver_name+" "+action)
+    os.system(script_dir+"/wemo.sh "+action)
+    time.sleep(seconds_between_actions)
     times = times[-400:]
     for device in devices:
       display_temps[device] = display_temps[device][-400:]
