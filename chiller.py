@@ -49,10 +49,10 @@ def c2f(t):
 
 devices = glob.glob(base_dir+"28*")
 bias_accum = {
-  "/sys/bus/w1/devices/28-020f9177206d":-0.02,
-  "/sys/bus/w1/devices/28-020f9177329c":0.19,
-  "/sys/bus/w1/devices/28-0205924504b1":-0.72,
-  "/sys/bus/w1/devices/28-0217917707d4":0.55
+  "/sys/bus/w1/devices/28-020f9177206d":0.45, 
+  "/sys/bus/w1/devices/28-020f9177329c":0.42,
+  "/sys/bus/w1/devices/28-0205924504b1":-2.24,
+  "/sys/bus/w1/devices/28-0217917707d4":1.36,
 }
 bias_count = 1 
 
@@ -136,7 +136,7 @@ while True:
     carboy_temp = temps[name_to_id("Carboy probe")]-bias_accum[name_to_id("Carboy probe")]/bias_count 
     driver_temp = temps[name_to_id(driver_name)]-bias_accum[name_to_id(driver_name)]/bias_count 
     action = "off"
-    if ((carboy_temp > target_temp) and (driver_temp > (target_temp-max_driver_to_target_dist))):
+    if (carboy_temp > target_temp):
       if (operation_type == "cool"):
         action = "on"
       else:
@@ -147,6 +147,9 @@ while True:
       else:
         action = "on"
     print("Temp diff to target:"+str(target_temp-carboy_temp)+" => Switching "+driver_name+" "+action)
+    if (abs(driver_temp-target_temp) > max_driver_to_target_dist):
+      print("However, preventing overshooting, swithing off")
+      action = "off"
     os.system(script_dir+"/wemo.sh "+action)
     time.sleep(seconds_between_actions)
     times = times[-400:]
