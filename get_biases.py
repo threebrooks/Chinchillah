@@ -34,6 +34,7 @@ for device in devices:
     bias_accum[device] = 0.0
 bias_count = 0 
 while True:
+    fp = open("biases.txt","w")
     temps = {}
     for device in devices:
         while True:
@@ -49,9 +50,7 @@ while True:
     bias_count += 1
     for device in devices:
       bias_accum[device] += temps[device]-avg
-      sys.stdout.write(device[-2:]+"="+"{:.2f}".format(bias_accum[device]/bias_count)+" ")
-    
-    print("")
-    sys.stdout.flush()
+      fp.write(device+" {:.2f}".format(bias_accum[device]/bias_count)+"\n")
+    fp.close()
     time.sleep(60)
 
