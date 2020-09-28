@@ -1,4 +1,4 @@
 #!/bin/bash
-#. ../ouimeaux-env/bin/activate
+export PATH=$PATH:~/.local/bin
 wemo switch "Chiller" $1
 
