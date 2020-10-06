@@ -11,7 +11,7 @@ class BubbleDetector:
     self.smoothed_gpio = 0
     self.gpio_smooth_fac = 0.9
     self.prev_smoothed_gpio_state = 1
-    self.bpm_smooth_fac = 0.9
+    self.bpm_smooth_fac = 0.99
     self.manager = Manager()
     self.smoothed_bpm = self.manager.Value('smoothed_bpm',0.0)
     self.last_bubble_time = -1
