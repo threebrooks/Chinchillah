@@ -10,6 +10,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import configparser
+import RPi.GPIO as GPIO
+import BubbleDetector
 
 config = configparser.ConfigParser()
 config.sections()
@@ -72,14 +74,23 @@ def c2f(t):
 devices = glob.glob(device_dir+"28*")
 devices = [sub.replace(device_dir,"") for sub in devices]
 
+GPIO.setmode(GPIO.BCM)
+bubble_detector = BubbleDetector.BubbleDetector(21)
+bubble_detector.start()
+
 times = []
 display_temps = {}
+display_bpm = []
 for device in devices:
     display_temps[device] = []
+
 while True:
     times.append(datetime.datetime.fromtimestamp(time.time()))
     plt.clf()
     plt.gcf().autofmt_xdate()
+
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
     temps = {}
     for device in devices:
         while True:
@@ -88,14 +99,19 @@ while True:
                 temps[device.replace(device_dir,"")] = temp 
                 break
 
-    plt.plot(times, [c2f(target_temp)] * len(times), "r", label="target ("+"{:.1f}".format(c2f(target_temp))+"F)")
+    lines = []
+    lines.extend(ax1.plot(times, [c2f(target_temp)] * len(times), "r", label="target ("+"{:.1f}".format(c2f(target_temp))+"F)"))
     for device in devices:
       norm_temp = temps[device]-get_device_bias(device)
       print(device+": "+str(norm_temp))
       display_temps[device].append(c2f(norm_temp))
-      plt.plot(times,display_temps[device], label=get_nice_name(device)+" ("+"{:.1f}".format(c2f(norm_temp))+"F)")
+      lines.extend(ax1.plot(times,display_temps[device], label=get_nice_name(device)+" ("+"{:.1f}".format(c2f(norm_temp))+"F)"))
 
-    plt.legend(loc='best')
+    display_bpm.append(bubble_detector.get_bpm())
+    lines.extend(ax2.plot(times,display_bpm, 'k--',label="Bubble per minute"))
+
+    labels = [l.get_label() for l in lines]
+    ax1.legend(lines, labels, loc='best')
     plt.grid()
     plt.savefig("/var/www/html/tempi.png")
     #os.system(script_dir+"/upload.sh")
@@ -119,6 +135,7 @@ while True:
     os.system(script_dir+"/wemo.sh "+action)
     time.sleep(seconds_between_actions)
     times = times[-400:]
+    display_bpm = display_bpm[-400:]
     for device in devices:
       display_temps[device] = display_temps[device][-400:]
 
