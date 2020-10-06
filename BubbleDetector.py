@@ -9,7 +9,7 @@ class BubbleDetector:
     GPIO.setup(self.pin, GPIO.IN, GPIO.PUD_DOWN)
 
     self.smoothed_gpio = 0
-    self.gpio_smooth_fac = 0.9
+    self.gpio_smooth_fac = 0.99
     self.prev_smoothed_gpio_state = 1
     self.bpm_smooth_fac = 0.99
     self.manager = Manager()
