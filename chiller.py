@@ -3,6 +3,7 @@ import sys
 import glob
 import time
 import datetime
+from datetime import date
 import matplotlib
 from cycler import cycler
 matplotlib.use('Agg')
@@ -112,6 +113,7 @@ while True:
 
     labels = [l.get_label() for l in lines]
     ax1.legend(lines, labels, loc='best')
+    plt.title(datetime.datetime.now())
     plt.grid()
     plt.savefig("/var/www/html/tempi.png")
     #os.system(script_dir+"/upload.sh")

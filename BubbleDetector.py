@@ -33,6 +33,7 @@ class BubbleDetector:
       self.prev_smoothed_gpio_state = new_smoothed_gpio_state
   
       if (new_bubble):
+        print("Bubble!")
         if (self.last_bubble_time > 0):
           time_since_last_bubble = time.time()-self.last_bubble_time
           self.smoothed_bpm.value = self.smoothed_bpm.value*self.bpm_smooth_fac+(1.0-self.bpm_smooth_fac)*(60.0/time_since_last_bubble)
