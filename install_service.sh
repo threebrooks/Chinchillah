@@ -8,8 +8,8 @@ After=network-online.target
 [Service]
 ExecStart=/usr/bin/python3 $DIR/chiller.py
 WorkingDirectory=$DIR
-StandardOutput=inherit
-StandardError=inherit
+StandardOutput=file:/var/log/BeerPi.stdout.log
+StandardError=file:/var/log/BeerPi.stderr.log
 Restart=always
 User=pi
 [Install]

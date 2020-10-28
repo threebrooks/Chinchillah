@@ -140,4 +140,6 @@ while True:
     display_bpm = display_bpm[-400:]
     for device in devices:
       display_temps[device] = display_temps[device][-400:]
+    sys.stdout.flush()
+    sys.stderr.flush()
 
