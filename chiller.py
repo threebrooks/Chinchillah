@@ -86,6 +86,7 @@ for device in devices:
     display_temps[device] = []
 
 while True:
+    print("#### "+str(datetime.datetime.now())+" ####")
     times.append(datetime.datetime.fromtimestamp(time.time()))
     plt.clf()
     plt.gcf().autofmt_xdate()
@@ -104,7 +105,7 @@ while True:
     lines.extend(ax1.plot(times, [c2f(target_temp)] * len(times), "r", label="target ("+"{:.1f}".format(c2f(target_temp))+"F)"))
     for device in devices:
       norm_temp = temps[device]-get_device_bias(device)
-      print(device+": "+str(norm_temp))
+      print("  "+device+": "+str(norm_temp))
       display_temps[device].append(c2f(norm_temp))
       lines.extend(ax1.plot(times,display_temps[device], label=get_nice_name(device)+" ("+"{:.1f}".format(c2f(norm_temp))+"F)"))
 
@@ -130,9 +131,9 @@ while True:
         action = "off"
       else:
         action = "on"
-    print("Temp diff to target:"+str(target_temp-carboy_temp)+" => Switching driver "+action)
+    print("  Temp diff to target:"+str(target_temp-carboy_temp)+" => Switching driver "+action)
     if (abs(driver_temp-target_temp) > max_driver_to_target_dist):
-      print("However, preventing overshooting, swithing off")
+      print("  However, preventing overshooting, swithing off")
       action = "off"
     os.system(script_dir+"/wemo.sh "+action)
     time.sleep(seconds_between_actions)
