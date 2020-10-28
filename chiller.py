@@ -117,6 +117,7 @@ while True:
     plt.title(datetime.datetime.now())
     plt.grid()
     plt.savefig("/var/www/html/tempi.png")
+    plt.close()
     #os.system(script_dir+"/upload.sh")
     carboy_temp = temps[get_device_name("core_temp")]-get_device_bias(get_device_name("core_temp"))
     driver_temp = temps[get_device_name("driver_temp")]-get_device_bias(get_device_name("driver_temp"))
