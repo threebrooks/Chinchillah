@@ -106,7 +106,7 @@ while True:
         lines.extend(ax1.plot(times, [c2f(target_temp)] * len(times), "r", label="target ("+"{:.1f}".format(c2f(target_temp))+"F)"))
         for device in devices:
           norm_temp = temps[device]-get_device_bias(device)
-          print("  "+device+": "+str(norm_temp))
+          print("  "+get_nice_name(device)+": "+str(norm_temp))
           display_temps[device].append(c2f(norm_temp))
           lines.extend(ax1.plot(times,display_temps[device], label=get_nice_name(device)+" ("+"{:.1f}".format(c2f(norm_temp))+"F)"))
     
