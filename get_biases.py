@@ -52,5 +52,6 @@ while True:
       bias_accum[device] += temps[device]-avg
       fp.write(device+" {:.2f}".format(bias_accum[device]/bias_count)+"\n")
     fp.close()
+    print("Written")
     time.sleep(60)
 

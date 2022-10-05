@@ -13,6 +13,8 @@ import numpy as np
 import configparser
 import RPi.GPIO as GPIO
 import BubbleDetector
+from kasa import SmartPlug,Discover
+import asyncio
 
 config = configparser.ConfigParser()
 config.sections()
@@ -21,6 +23,27 @@ operation_type = config.get('DEFAULT', 'type')
 target_temp = config.getfloat('DEFAULT', 'target_temperature')
 max_driver_to_target_dist = config.getfloat('DEFAULT', 'max_driver_to_target_dist')
 seconds_between_actions = config.getfloat('DEFAULT', 'seconds_between_actions')
+
+def GetKasaAddress(name):
+  devices = asyncio.run(Discover.discover())
+  for addr, dev in devices.items():
+      if (dev.alias == name):
+        return addr
+      asyncio.run(dev.update())
+  raise RuntimeError("Can't find "+name)
+
+fridge_switch = SmartPlug(GetKasaAddress("Chiller"))
+
+async def Fridge(onoff):
+  try:
+    await fridge_switch.update()
+    if (onoff):
+      await fridge_switch.turn_on()
+    else:
+      await fridge_switch.turn_off()
+  except Exception as e:
+    print(e)
+    pass
 
 def get_device_bias(device_name):
     if (not config.has_option("DEFAULT", device_name)):
@@ -122,22 +145,22 @@ while True:
         #os.system(script_dir+"/upload.sh")
         carboy_temp = temps[get_device_name("core_temp")]-get_device_bias(get_device_name("core_temp"))
         driver_temp = temps[get_device_name("driver_temp")]-get_device_bias(get_device_name("driver_temp"))
-        action = "off"
+        action = False
         if (carboy_temp > target_temp):
           if (operation_type == "cool"):
-            action = "on"
+            action = True
           else:
-            action = "off"
+            action = False
         else:
           if (operation_type == "cool"):
-            action = "off"
+            action = False
           else:
-            action = "on"
-        print("  Temp diff to target:"+str(target_temp-carboy_temp)+" => Switching driver "+action)
+            action = True
+        print("  Temp diff to target:"+str(target_temp-carboy_temp)+" => Switching driver "+str(action))
         if (abs(driver_temp-target_temp) > max_driver_to_target_dist):
           print("  However, preventing overshooting, swithing off")
-          action = "off"
-        os.system(script_dir+"/wemo.sh "+action)
+          action = False
+        asyncio.run(Fridge(action))
         time.sleep(seconds_between_actions)
         times = times[-400:]
         display_bpm = display_bpm[-400:]
@@ -145,7 +168,8 @@ while True:
           display_temps[device] = display_temps[device][-400:]
         sys.stdout.flush()
         sys.stderr.flush()
-    except:
+    except Exception as e:
+        print(e)
         time.sleep(1)
         
 
