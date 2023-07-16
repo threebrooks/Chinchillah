@@ -1,4 +1,3 @@
-import os
 import sys
 import glob
 import time
@@ -12,8 +11,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import configparser
 import RPi.GPIO as GPIO
-import BubbleDetector
-from kasa import SmartPlug,Discover
 import asyncio
 
 config = configparser.ConfigParser()
@@ -24,26 +21,15 @@ target_temp = config.getfloat('DEFAULT', 'target_temperature')
 max_driver_to_target_dist = config.getfloat('DEFAULT', 'max_driver_to_target_dist')
 seconds_between_actions = config.getfloat('DEFAULT', 'seconds_between_actions')
 
-def GetKasaAddress(name):
-  devices = asyncio.run(Discover.discover())
-  for addr, dev in devices.items():
-      if (dev.alias == name):
-        return addr
-      asyncio.run(dev.update())
-  raise RuntimeError("Can't find "+name)
+fridge_switch_pin = 24
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(fridge_switch_pin, GPIO.OUT)
 
-fridge_switch = SmartPlug(GetKasaAddress("Chiller"))
-
-async def Fridge(onoff):
-  try:
-    await fridge_switch.update()
-    if (onoff):
-      await fridge_switch.turn_on()
-    else:
-      await fridge_switch.turn_off()
-  except Exception as e:
-    print(e)
-    pass
+def Fridge(onoff):
+  if (onoff):
+    GPIO.output(fridge_switch_pin, 1)
+  else:
+    GPIO.output(fridge_switch_pin, 0)
 
 def get_device_bias(device_name):
     if (not config.has_option("DEFAULT", device_name)):
@@ -98,10 +84,6 @@ def c2f(t):
 devices = glob.glob(device_dir+"28*")
 devices = [sub.replace(device_dir,"") for sub in devices]
 
-GPIO.setmode(GPIO.BCM)
-bubble_detector = BubbleDetector.BubbleDetector(21)
-bubble_detector.start()
-
 async def main():
   times = []
   display_temps = {}
@@ -134,9 +116,6 @@ async def main():
             display_temps[device].append(c2f(norm_temp))
             lines.extend(ax1.plot(times,display_temps[device], label=get_nice_name(device)+" ("+"{:.1f}".format(c2f(norm_temp))+"F)"))
       
-          display_bpm.append(bubble_detector.get_bpm())
-          lines.extend(ax2.plot(times,display_bpm, 'k--',label="Bubble per minute"))
-      
           labels = [l.get_label() for l in lines]
           ax1.legend(lines, labels, loc='best')
           plt.title(datetime.datetime.now())
@@ -163,7 +142,7 @@ async def main():
               (operation_type == "heat" and ((driver_temp-target_temp) > max_driver_to_target_dist))):
             print("  However, preventing overshooting, swithing off")
             action = False
-          await Fridge(action)
+          Fridge(action)
           time.sleep(seconds_between_actions)
           times = times[-400:]
           display_bpm = display_bpm[-400:]
